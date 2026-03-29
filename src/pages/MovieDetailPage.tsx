@@ -13,6 +13,8 @@ const MovieDetailPage = () => {
 
   useEffect(() => {
     const fetchMovieDetails = async () => {
+      window.scrollTo(0, 0);
+      
       if (!movieId) return;
 
       setIsPending(true);
