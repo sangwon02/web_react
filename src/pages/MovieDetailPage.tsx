@@ -1,63 +1,31 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
 import { LoadingSpinner } from '../components/LoadingSpinner';
+import { useCustomFetch } from '../hooks/useCustomFetch';
 import type { MovieDetails, CreditsResponse } from '../types/movie';
 
 const MovieDetailPage = () => {
   const { movieId } = useParams<{ movieId: string }>();
-  const [movie, setMovie] = useState<MovieDetails | null>(null);
-  const [credits, setCredits] = useState<CreditsResponse | null>(null);
-  const [isPending, setIsPending] = useState(true);
-  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
-    const fetchMovieDetails = async () => {
-      window.scrollTo(0, 0);
-      
-      if (!movieId) return;
-
-      setIsPending(true);
-      setIsError(false);
-
-      try {
-        const [movieRes, creditsRes] = await Promise.all([
-          axios.get<MovieDetails>(
-            `https://api.themoviedb.org/3/movie/${movieId}?language=ko-KR`,
-            {
-              headers: {
-                Authorization: `Bearer ${import.meta.env.VITE_TMDB_KEY}`,
-              },
-            }
-          ),
-          axios.get<CreditsResponse>(
-            `https://api.themoviedb.org/3/movie/${movieId}/credits?language=ko-KR`,
-            {
-              headers: {
-                Authorization: `Bearer ${import.meta.env.VITE_TMDB_KEY}`,
-              },
-            }
-          ),
-        ]);
-
-        setMovie(movieRes.data);
-        setCredits(creditsRes.data);
-      } catch (error) {
-        setIsError(true);
-      } finally {
-        setIsPending(false);
-      }
-    };
-
-    fetchMovieDetails();
+    window.scrollTo(0, 0);
   }, [movieId]);
+
+  const { data: movie, isPending: isMoviePending, isError: isMovieError } = useCustomFetch<MovieDetails>(
+    movieId ? `https://api.themoviedb.org/3/movie/${movieId}?language=ko-KR` : ''
+  );
+
+  const { data: credits, isPending: isCreditsPending, isError: isCreditsError } = useCustomFetch<CreditsResponse>(
+    movieId ? `https://api.themoviedb.org/3/movie/${movieId}/credits?language=ko-KR` : ''
+  );
+
+  const isPending = isMoviePending || isCreditsPending;
+  const isError = isMovieError || isCreditsError;
 
   if (isError) {
     return (
       <div className='p-10 flex justify-center items-center h-screen bg-black text-white'>
-        <span className='text-red-500 text-2xl font-bold'>
-          영화 정보를 불러오는 중 에러가 발생했습니다.
-        </span>
+        <span className='text-red-500 text-2xl font-bold'>에러가 발생했습니다.</span>
       </div>
     );
   }
